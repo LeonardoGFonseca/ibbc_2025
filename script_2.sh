@@ -46,11 +46,11 @@ CONFIG_DIR="$LOGS_DIR/fastp"
 mkdir -p "$LOGS_DIR" "$CONFIG_DIR" "$QC_DIR" "$TRIMMED_DIR"
 
 # Global Logging System
-GLOBAL_LOG="$LOGS_DIR/pipeline_execution_$(date +%Y%m%d_%H%M%S).log"
+GLOBAL_LOG="$LOGS_DIR/complete_log_$(date +%Y%m%d_%H%M%S).log"
 exec > >(tee -a "$GLOBAL_LOG") 2>&1
 
-echo " START OF EXECUTION: $(date)"
-echo " Global Log: $GLOBAL_LOG"
+echo "START OF EXECUTION: $(date)"
+echo "Global Log: $GLOBAL_LOG"
 
 # 2. Environment and Threads
 
@@ -61,7 +61,7 @@ read -r USER_THREADS < /dev/tty
 
 # Regex check: if empty or not a number, default to 4.
 if [[ -z "$USER_THREADS" || ! "$USER_THREADS" =~ ^[0-9]+$ ]]; then THREADS=4; else THREADS=$USER_THREADS; fi
-echo ">> Using $THREADS threads."
+echo "Using $THREADS threads."
 
 # Check if 'fastp' is activated. If not, ask for Conda environment.
 if ! command -v fastp &> /dev/null; then
@@ -81,12 +81,11 @@ fi
 # 3. FastQC and MultiQC Raw Data
 
 echo ""
-echo "PHASE 1: INITIAL DIAGNOSTICS"
-echo ">> FastQC Raw..."
+echo "FastQC Raw..."
 # Runs FastQC on all .fastq files.
 fastqc "$RAW_DATA"/*.fastq* -o "$QC_DIR/fastqc_raw/" -t "$THREADS"
 
-echo ">> MultiQC Raw..."
+echo "MultiQC Raw..."
 multiqc "$QC_DIR/fastqc_raw" -o "$QC_DIR/multiqc_raw"
 
 # 4. FastP Decision
@@ -110,10 +109,10 @@ if [ "$MODE" == "2" ]; then
     else S3="./script_3.sh"; fi
 
     if [ -f "$S3" ]; then
-        echo ">> Calling Decision Model..."
+        echo "Calling Decision Model..."
         # Runs script_3 and captures its specific output to a separate log
         MODEL_RUN_LOG="$LOGS_DIR/fastp/model_execution_full.log"
-        echo "--- Start of Model Execution: $(date) ---" > "$MODEL_RUN_LOG"
+        echo "Start of Model Execution: $(date) ---" > "$MODEL_RUN_LOG"
         
         bash "$S3" "$QC_DIR/fastqc_raw" 2>&1 | tee -a "$MODEL_RUN_LOG"
         
@@ -157,11 +156,11 @@ if [ "$SCOPE" == "2" ]; then
         echo "ERROR: No sample found with name '$SAMPLE_TARGET' in 1_raw_data/"
         exit 1
     fi
-    echo ">> Surgical Mode Enabled: Processing only $SAMPLE_TARGET"
+    echo "Surgical Mode Enabled: Processing only $SAMPLE_TARGET"
 else
     # Select all R1 files
     TARGET_FILES="$RAW_DATA/*_R1*.fastq*"
-    echo ">> Batch Mode Enabled: Processing all samples."
+    echo "Batch Mode Enabled: Processing all samples."
 fi
 
 
@@ -182,7 +181,7 @@ for R1_FILE in $TARGET_FILES; do
     R2_FILE="$RAW_DATA/$R2_FILENAME"
     SAMPLE_NAME="${BASENAME%.fastq*}"
 
-    echo "   -> Processing: $SAMPLE_NAME"
+    echo "Processing: $SAMPLE_NAME"
     if [ ! -f "$R2_FILE" ]; then 
         echo "Missing R2: $R2_FILENAME"
         exit 1
